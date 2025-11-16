@@ -1793,36 +1793,25 @@
             firebase.initializeApp(firebaseConfig);
             db = firebase.firestore();
             auth = firebase.auth();
-
-            // Test Firestore connection (but don't require auth yet)
-            db.collection('seasons').limit(1).get()
-                .then(() => {
-                    isConnected = true;
-                    showConnectionStatus('Connected to Firestore', true);
-                    console.log('Firestore connected successfully');
-                })
-                .catch((error) => {
-                    console.error('Connection error:', error);
-                    showConnectionStatus('Failed to connect to Firestore', false);
-
-                    // Show more detailed error
-                    if (error.code === 'permission-denied') {
-                        console.log('Permission denied - Firestore rules may need updating');
-                    }
-                });
-
+            
+            // Set as connected immediately - we'll verify during actual operations
+            isConnected = true;
+            console.log('Firebase initialized successfully');
+            
             // Listen for auth state changes
             auth.onAuthStateChanged((user) => {
                 if (user) {
                     currentUser = user;
                     document.getElementById('authContainer').classList.add('hidden');
                     document.getElementById('homeTab').classList.remove('hidden');
-
+                    
                     const userAvatar = document.getElementById('userAvatar');
                     if (userAvatar) {
-                        userAvatar.textContent = user.email.charAt(0).toUpperCase();
+                        const displayName = user.displayName || user.email;
+                        userAvatar.textContent = displayName.charAt(0).toUpperCase();
                     }
-
+                    
+                    showConnectionStatus('Connected as ' + (user.displayName || user.email), true);
                     loadSeasons();
                 } else {
                     currentUser = null;
@@ -1835,6 +1824,7 @@
         } catch (error) {
             console.error('Firebase initialization error:', error);
             showConnectionStatus('Firebase initialization failed', false);
+            isConnected = false;
         }
 
         let currentSeasonId = null;
