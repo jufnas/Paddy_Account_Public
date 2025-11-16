@@ -2396,8 +2396,14 @@
         }
 
         async function createNewSeason() {
+            // Check both connection AND authentication
             if (!isConnected) {
                 alert('Not connected to Firestore');
+                return;
+            }
+
+            if (!currentUser) {
+                alert('You must be logged in to create a season');
                 return;
             }
 
@@ -2426,6 +2432,7 @@
                 }
 
                 const newSeason = {
+                    userId: currentUser.uid,  // ADD THIS LINE - This was missing!
                     seasonNumber,
                     year,
                     lands,
@@ -2447,7 +2454,7 @@
                 showConnectionStatus('New season created successfully', true);
             } catch (error) {
                 console.error('Error creating season:', error);
-                showConnectionStatus('Error creating season', false);
+                showConnectionStatus('Error creating season: ' + error.message, false);
             }
         }
 
