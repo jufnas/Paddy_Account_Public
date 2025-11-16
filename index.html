@@ -1793,24 +1793,24 @@
             firebase.initializeApp(firebaseConfig);
             db = firebase.firestore();
             auth = firebase.auth();
-            
+
             // Set as connected immediately - we'll verify during actual operations
             isConnected = true;
             console.log('Firebase initialized successfully');
-            
+
             // Listen for auth state changes
             auth.onAuthStateChanged((user) => {
                 if (user) {
                     currentUser = user;
                     document.getElementById('authContainer').classList.add('hidden');
                     document.getElementById('homeTab').classList.remove('hidden');
-                    
+
                     const userAvatar = document.getElementById('userAvatar');
                     if (userAvatar) {
                         const displayName = user.displayName || user.email;
                         userAvatar.textContent = displayName.charAt(0).toUpperCase();
                     }
-                    
+
                     showConnectionStatus('Connected as ' + (user.displayName || user.email), true);
                     loadSeasons();
                 } else {
@@ -2048,7 +2048,9 @@
                 }));
 
                 if (seasons.length === 0) {
-                    await createDefaultSeason();
+                    // No seasons found - prompt user to create one
+                    showNewSeasonModal();
+                    showConnectionStatus('Welcome! Please create your first season', true);
                 } else {
                     currentSeasonId = seasons[0].id;
                     updateSeasonDisplay();
@@ -2057,31 +2059,6 @@
             } catch (error) {
                 console.error('Error loading seasons:', error);
                 showConnectionStatus('Error loading seasons', false);
-            }
-        }
-
-        async function createDefaultSeason() {
-            if (!currentUser) return;
-
-            try {
-                const defaultSeason = {
-                    userId: currentUser.uid,  // ADD THIS LINE
-                    seasonNumber: 1,
-                    year: 2025,
-                    lands: [
-                        { name: '06 Acre', area: 6 },
-                        { name: '05 Acre', area: 5 }
-                    ],
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                };
-                const docRef = await db.collection('seasons').add(defaultSeason);
-                seasons = [{ id: docRef.id, ...defaultSeason }];
-                currentSeasonId = docRef.id;
-                currentSeasonLands = defaultSeason.lands;
-                updateSeasonDisplay();
-                updateLandDropdown();
-            } catch (error) {
-                console.error('Error creating default season:', error);
             }
         }
 
@@ -2372,12 +2349,20 @@
         }
 
         function showNewSeasonModal() {
+            // Set current year as default
             document.getElementById('seasonYear').value = new Date().getFullYear();
+
+            // Set season number based on existing seasons
+            const maxSeasonNumber = seasons.length > 0
+                ? Math.max(...seasons.map(s => s.seasonNumber || 0))
+                : 0;
+            document.getElementById('seasonNumber').value = maxSeasonNumber + 1;
+
+            // Clear land items
             document.getElementById('landItemsContainer').innerHTML = '';
             landItemCounter = 0;
-
+            // Add one empty land item
             addLandItem();
-
             document.getElementById('newSeasonModal').classList.remove('hidden');
         }
 
